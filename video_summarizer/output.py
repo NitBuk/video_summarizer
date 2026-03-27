@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from textwrap import wrap
 import re
+from textwrap import wrap
+from typing import Any
 
 
 @dataclass(frozen=True)
@@ -15,7 +17,9 @@ class RunArtifacts:
     cleaned_audio_dir: Path
     source_video_path: Path
     transcript_path: Path
+    summary_markdown_path: Path
     summary_pdf_path: Path
+    run_manifest_path: Path
 
 
 def sanitize_filename(filename: str) -> str:
@@ -41,7 +45,9 @@ def create_run_artifacts(
     cleaned_audio_dir = run_dir / "audio" / "cleaned"
     source_video_path = input_dir / sanitize_filename(source_name)
     transcript_path = run_dir / "transcript.txt"
+    summary_markdown_path = run_dir / "summary.md"
     summary_pdf_path = run_dir / "summary.pdf"
+    run_manifest_path = run_dir / "run_manifest.json"
 
     for directory in (input_dir, raw_audio_dir, cleaned_audio_dir):
         directory.mkdir(parents=True, exist_ok=True)
@@ -53,13 +59,87 @@ def create_run_artifacts(
         cleaned_audio_dir=cleaned_audio_dir,
         source_video_path=source_video_path,
         transcript_path=transcript_path,
+        summary_markdown_path=summary_markdown_path,
         summary_pdf_path=summary_pdf_path,
+        run_manifest_path=run_manifest_path,
     )
 
 
 def save_text(path: Path, text: str) -> Path:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(text, encoding="utf-8")
+    return path
+
+
+def build_summary_markdown(summary_text: str, *, title: str = "Lesson Summary") -> str:
+    body = normalize_pdf_text(summary_text).strip()
+    if body:
+        return f"# {title}\n\n{body}\n"
+    return f"# {title}\n"
+
+
+def save_summary_as_markdown(
+    summary_text: str,
+    output_path: Path,
+    *,
+    title: str = "Lesson Summary",
+) -> Path:
+    return save_text(output_path, build_summary_markdown(summary_text, title=title))
+
+
+def build_run_manifest(
+    *,
+    artifacts: RunArtifacts,
+    source_name: str,
+    status: str,
+    language: str,
+    summary_mode: str,
+    openai_enabled: bool,
+    transcription_model: str,
+    summary_model: str,
+    chunk_duration_seconds: int,
+    audio_chunk_count: int | None = None,
+    transcript_char_count: int | None = None,
+    summary_char_count: int | None = None,
+    now: datetime | None = None,
+) -> dict[str, Any]:
+    generated_at = (now or datetime.now(timezone.utc)).isoformat()
+    return {
+        "schema_version": 1,
+        "generated_at_utc": generated_at,
+        "status": status,
+        "source": {
+            "name": source_name,
+            "video_path": str(artifacts.source_video_path),
+        },
+        "runtime": {
+            "openai_enabled": openai_enabled,
+            "transcription_model": transcription_model,
+            "summary_model": summary_model,
+            "chunk_duration_seconds": chunk_duration_seconds,
+        },
+        "workflow": {
+            "language": language,
+            "summary_mode": summary_mode,
+            "audio_chunk_count": audio_chunk_count,
+            "transcript_char_count": transcript_char_count,
+            "summary_char_count": summary_char_count,
+        },
+        "artifacts": {
+            "run_dir": str(artifacts.run_dir),
+            "input_dir": str(artifacts.input_dir),
+            "raw_audio_dir": str(artifacts.raw_audio_dir),
+            "cleaned_audio_dir": str(artifacts.cleaned_audio_dir),
+            "transcript_txt": str(artifacts.transcript_path),
+            "summary_md": str(artifacts.summary_markdown_path),
+            "summary_pdf": str(artifacts.summary_pdf_path),
+        },
+    }
+
+
+def save_run_manifest(path: Path, manifest: dict[str, Any]) -> Path:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     return path
 
 

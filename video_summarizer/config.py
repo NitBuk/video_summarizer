@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+import os
+import shutil
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Mapping
-import os
 
 
 def _load_dotenv() -> None:
@@ -23,6 +24,13 @@ class AppConfig:
     summary_model: str
     chunk_duration_seconds: int
     pdf_font_path: Path | None
+
+
+@dataclass(frozen=True)
+class PreflightReport:
+    errors: list[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
+    ffmpeg_path: str | None = None
 
 
 def _parse_optional_path(raw_value: str | None) -> Path | None:
@@ -60,3 +68,28 @@ def load_config(environ: Mapping[str, str] | None = None) -> AppConfig:
             else None
         ),
     )
+
+
+def validate_runtime(config: AppConfig) -> PreflightReport:
+    """Check the local runtime for the most important pipeline dependencies."""
+
+    errors: list[str] = []
+    warnings: list[str] = []
+    ffmpeg_path = shutil.which("ffmpeg")
+
+    if ffmpeg_path is None:
+        errors.append(
+            "ffmpeg was not found on PATH. Audio extraction and cleaning will not work "
+            "until ffmpeg is installed."
+        )
+
+    if config.chunk_duration_seconds <= 0:
+        errors.append("CHUNK_DURATION_SECONDS must be a positive integer.")
+
+    if not config.openai_api_key:
+        warnings.append(
+            "OPENAI_API_KEY is not set. Uploading and local preprocessing still work, "
+            "but transcription and summary generation are disabled."
+        )
+
+    return PreflightReport(errors=errors, warnings=warnings, ffmpeg_path=ffmpeg_path)
