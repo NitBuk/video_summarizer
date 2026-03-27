@@ -1,17 +1,32 @@
-# Ignore virtual environment
+# Local environments
 .venv/
+venv/
 
-# Ignore Python cache
+# Python caches and tooling state
 __pycache__/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
 *.pyc
+*.pyo
+*.pyd
+.coverage
+htmlcov/
 
-# Ignore xml and iml files
-*.xml
+# IDE and editor folders
+.idea/
+.vscode/
 *.iml
 
-# Ignore config file with API keys
+# Environment files and local overrides
 .env
+.env.*
+!.env.example
 
-# Ignore temporary files
+# Generated artifacts
+outputs/
 *.log
 *.tmp
+
+# OS metadata
+.DS_Store
