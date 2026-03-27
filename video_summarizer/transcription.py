@@ -19,7 +19,8 @@ def normalize_language_choice(language: str | None) -> str | None:
 def build_transcription_prompt(language: str) -> str:
     return (
         f"The following audio is a recorded class lecture in {language}. "
-        "Please transcribe it completely and accurately, capturing explanations, technical details, "
+        "Please transcribe it completely and accurately, capturing explanations, "
+        "technical details, "
         "examples, and key concepts. The transcript will be used as study material."
     )
 

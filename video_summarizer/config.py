@@ -1,10 +1,10 @@
 from __future__ import annotations
 
+from collections.abc import Mapping
 import os
 import shutil
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Mapping
 
 
 def _load_dotenv() -> None:

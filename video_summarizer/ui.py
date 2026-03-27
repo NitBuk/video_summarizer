@@ -89,7 +89,10 @@ def main() -> None:
     if preflight.ffmpeg_path:
         st.caption(f"ffmpeg detected at `{preflight.ffmpeg_path}`")
     else:
-        st.error("ffmpeg was not found on PATH. Audio extraction will not work until it is installed.")
+        st.error(
+            "ffmpeg was not found on PATH. Audio extraction will not work "
+            "until it is installed."
+        )
 
     for warning in preflight.warnings:
         st.warning(warning)
@@ -132,7 +135,10 @@ def main() -> None:
         )
 
     st.write(f"Run directory: `{artifacts.run_dir}`")
-    st.write("Pipeline: video -> audio extraction -> transcription -> summary generation -> export/output")
+    st.write(
+        "Pipeline: video -> audio extraction -> transcription -> "
+        "summary generation -> export/output"
+    )
 
     prepare_disabled = bool(preflight.errors)
     if st.button("Prepare audio chunks", use_container_width=True, disabled=prepare_disabled):
@@ -164,7 +170,11 @@ def main() -> None:
         st.write(f"Cleaned audio chunks: {len(audio_chunks)}")
 
     transcribe_disabled = not config.openai_api_key or bool(preflight.errors)
-    if audio_chunks and st.button("Transcribe audio", use_container_width=True, disabled=transcribe_disabled):
+    if audio_chunks and st.button(
+        "Transcribe audio",
+        use_container_width=True,
+        disabled=transcribe_disabled,
+    ):
         if not config.openai_api_key:
             st.error("Set OPENAI_API_KEY before transcribing.")
         else:

@@ -9,4 +9,6 @@ def test_build_cleaned_chunk_path(tmp_path):
     raw_chunk = tmp_path / "audio_chunk_001.wav"
     cleaned_dir = tmp_path / "cleaned"
 
-    assert build_cleaned_chunk_path(raw_chunk, cleaned_dir) == cleaned_dir / "cleaned_audio_chunk_001.wav"
+    assert build_cleaned_chunk_path(raw_chunk, cleaned_dir) == (
+        cleaned_dir / "cleaned_audio_chunk_001.wav"
+    )
