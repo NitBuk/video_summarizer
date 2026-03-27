@@ -17,6 +17,14 @@ from .summarization import SUMMARY_MODE_LABELS, summarize_transcript
 from .transcription import build_transcription_prompt, transcribe_audio
 
 
+def _build_upload_token(uploaded_file) -> tuple[object, str, object]:
+    return (
+        getattr(uploaded_file, "file_id", None),
+        uploaded_file.name,
+        getattr(uploaded_file, "size", None),
+    )
+
+
 def _save_upload(uploaded_file, destination: Path) -> Path:
     destination.parent.mkdir(parents=True, exist_ok=True)
     destination.write_bytes(uploaded_file.getbuffer())
@@ -88,12 +96,19 @@ def main() -> None:
 
     uploaded_video = st.file_uploader("Upload a video file", type=["mp4", "mov", "avi", "mkv"])
     if uploaded_video is None:
+        if "current_upload_token" in st.session_state:
+            _reset_workflow_state()
+            st.session_state.pop("current_upload_token", None)
         st.info("Upload a video to start the pipeline.")
         return
 
-    if "current_upload_name" not in st.session_state or st.session_state.current_upload_name != uploaded_video.name:
+    upload_token = _build_upload_token(uploaded_video)
+    if (
+        "current_upload_token" not in st.session_state
+        or st.session_state.current_upload_token != upload_token
+    ):
         _reset_workflow_state()
-        st.session_state.current_upload_name = uploaded_video.name
+        st.session_state.current_upload_token = upload_token
 
     language = st.radio("Lecture language", ["Hebrew", "English"], horizontal=True)
     summary_mode = st.radio(
