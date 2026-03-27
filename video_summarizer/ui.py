@@ -90,8 +90,7 @@ def main() -> None:
         st.caption(f"ffmpeg detected at `{preflight.ffmpeg_path}`")
     else:
         st.error(
-            "ffmpeg was not found on PATH. Audio extraction will not work "
-            "until it is installed."
+            "ffmpeg was not found on PATH. Audio extraction will not work until it is installed."
         )
 
     for warning in preflight.warnings:
