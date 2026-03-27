@@ -1,124 +1,136 @@
-# 📚 Lesson Summarizer (v0.0.1)
+# Video Summarizer
 
-Welcome to **Lesson Summarizer v0.0.1**, a Streamlit-based web application that enables students, educators, and content creators to upload video lessons (in Hebrew or English), transcribe the spoken content, and generate a structured summary suitable for study purposes.
+Video Summarizer is a Streamlit app for turning lecture-style videos into transcripts and study-ready summaries. The repo keeps the original manual workflow on purpose: you can inspect each step, rerun any stage, and see exactly where generated artifacts are written.
 
-This version is an MVP (Minimum Viable Product) focused on manually controlled processing steps, allowing clear visibility and control over each part of the workflow.
+This repo is local-first. There is no production deployment wired into the codebase today.
 
----
+## What it does
 
-## 🎯 Features
+- Upload a video in `mp4`, `mov`, `avi`, or `mkv` format.
+- Extract audio with `ffmpeg`, then normalize and trim each chunk.
+- Transcribe each cleaned audio chunk with the OpenAI transcription API.
+- Generate either a base summary or a web-search-aware summary.
+- Export the summary as text in the UI and as a PDF artifact on disk.
 
-- **Video Upload**: Supports `.mp4`, `.mov`, and `.avi` formats.
-- **Audio Extraction and Cleaning**:
-  - Extracts mono-channel 16-bit WAV audio from uploaded video.
-  - Applies silence trimming and audio normalization for improved transcription quality.
-- **Manual Transcription**:
-  - Transcribes segmented audio chunks using OpenAI's GPT-4o Transcribe model.
-  - User chooses between Hebrew and English for language accuracy.
-  - Prompts can be tailored to ensure educational transcription quality.
-- **Transcript Export**:
-  - Complete transcript is displayed and can be downloaded as a `.txt` file.
-- **Manual Summarization**:
-  - Choose between two summarization modes:
-    - **Base Summarizer** (faster, cheaper)
-    - **Agent Summarizer** (enhanced with web-search awareness)
-- **Summary Export**:
-  - Displays full summary.
-  - Downloadable as a PDF file.
+## Pipeline
 
----
+`video -> audio extraction -> transcription -> summary generation -> export/output`
 
-## 🧪 Version Notes: v0.0.1 (Manual Control Focus)
+The app stores each run in its own folder under `outputs/`, so the source video, audio chunks, transcript, and PDF are kept together for debugging and review.
 
-In this version, the entire process is **user-controlled step-by-step**:
+## What is local vs API-backed
 
-1. **Video Upload**: User manually uploads the file.
-2. **Extract & Clean Audio**: Triggered manually by the user.
-3. **Transcription**: Executed only when the user clicks the "Transcribe Audio" button.
-4. **Transcript Review & Download**: Displayed immediately and saved as a `.txt` file.
-5. **Summary Generation**: Controlled by selecting the method and clicking "Generate Summary".
-6. **Summary Download**: Available once the summary is ready.
+Local only:
 
-This manual architecture is intentional for early testing and transparency. It also aids debugging and experimentation with model behaviors.
+- Video upload and artifact management
+- Audio chunking and cleanup with `ffmpeg`
+- Transcript and PDF file writing
+- Prompt construction and run-directory layout
 
----
+API-backed:
 
-## ⚙️ Tech Stack
+- Audio transcription via OpenAI
+- Summary generation via OpenAI
+- Optional agent-style summary mode that can use web search if the model/account supports it
 
-- **Frontend/UI**: [Streamlit](https://streamlit.io)
-- **Audio Processing**: [ffmpeg](https://ffmpeg.org)
-- **Transcription & Summarization**: [OpenAI GPT-4o](https://platform.openai.com)
-- **PDF Generation**: `reportlab`
-- **Environment Configuration**: `python-dotenv`
+## Project structure
 
----
-
-## 🛠 Setup Instructions
-
-1. **Clone the repo**:
-```bash
-https://github.com/your-username/video-summarizer.git
-cd video-summarizer
+```text
+video_summarizer/
+├── app.py
+├── video_summarizer/
+│   ├── config.py
+│   ├── media.py
+│   ├── output.py
+│   ├── summarization.py
+│   ├── transcription.py
+│   └── ui.py
+├── tests/
+├── .env.example
+├── pyproject.toml
+└── outputs/            # generated at runtime
 ```
 
-2. **Install dependencies**:
+## Quick start
+
+1. Create and activate a virtual environment.
+
 ```bash
 python -m venv .venv
-source .venv/bin/activate  # or .venv\Scripts\activate on Windows
-pip install -r requirements.txt
+source .venv/bin/activate
 ```
 
-3. **Add your OpenAI API key**:
-Create a `.env` file with:
-```
-OPENAI_API_KEY=your-key-here
-```
+2. Install the project and dev tools.
 
-4. **Install ffmpeg**:
-Ensure `ffmpeg` is installed and accessible via CLI.
-
-5. **Run the app**:
 ```bash
-streamlit run app.py --server.maxUploadSize 1000
+pip install -e .[dev]
 ```
 
----
+3. Create your local environment file.
 
-## 📁 Project Structure
-```
-video_summarizer/
-├── app.py                     # Main Streamlit app
-├── modules/
-│   ├── audio_utils.py        # Audio extraction and cleaning functions
-│   ├── transcription.py      # Transcription logic with OpenAI API
-│   ├── summarizer.py         # Base and agent summarizers
-│   └── pdf_generator.py      # Summary PDF export utility
-├── outputs/                  # Temporary storage for audio, transcript, and PDFs
-├── .env                      # API key config
-└── requirements.txt
+```bash
+cp .env.example .env
 ```
 
----
+4. Set `OPENAI_API_KEY` in `.env`.
 
-## 🚧 Coming Soon (v0.1.0+)
+5. Install `ffmpeg` and make sure it is on your `PATH`.
 
-- Auto-processing pipeline (no manual clicks required)
-- Multi-language support detection and correction
-- Support for uploading audio-only files
-- Enhanced UI feedback and processing status
-- Cloud deployment with session management
+6. Start the app.
 
----
+```bash
+streamlit run app.py
+```
 
-## 🙋‍♂️ Contributing
-This project is in its early stages. Feel free to open issues or suggest improvements!
+For the fastest demo, upload a short clip so the audio chunking and API calls finish quickly.
 
----
+## Developer workflow
 
-## 📄 License
-MIT License
+- Run tests: `pytest`
+- Lint: `ruff check .`
+- Format check: `ruff format --check .`
+- App entrypoint: `app.py`
+- UI logic: `video_summarizer/ui.py`
+- Audio processing: `video_summarizer/media.py`
+- Transcription API wrapper: `video_summarizer/transcription.py`
+- Summary generation: `video_summarizer/summarization.py`
+- Artifact writing and PDF export: `video_summarizer/output.py`
 
----
+## Output layout
 
-Created with ❤️ by Nitzan Buk. Feedback and collaboration ideas are welcome!
+Each upload gets its own run folder, for example:
 
+```text
+outputs/
+└── lecture-clip-20260327-100506/
+    ├── input/
+    │   └── lecture-clip.mp4
+    ├── audio/
+    │   ├── raw/
+    │   └── cleaned/
+    ├── transcript.txt
+    └── summary.pdf
+```
+
+## Limitations
+
+- This repo still depends on OpenAI for transcription and summarization.
+- `ffmpeg` must be installed locally for audio extraction to work.
+- PDF export is best effort. If a Unicode font is available locally or configured through `PDF_FONT_PATH`, the PDF can render more languages. Otherwise it falls back to a basic core font and may replace unsupported characters.
+- The app is intentionally manual rather than fully automated, so each stage remains visible and debuggable.
+
+## What this demonstrates
+
+- A clean Streamlit app with a clearly separated processing pipeline.
+- Practical Python packaging and environment handling with `pyproject.toml`.
+- Defensive artifact management instead of dumping everything into one folder.
+- Honest documentation about what is local, what uses APIs, and where the limitations are.
+- Basic tests for deterministic logic that do not need network access.
+
+## Recent improvements
+
+- Replaced the old flat `modules/` layout with a real package.
+- Removed tracked IDE files and added better repo hygiene.
+- Switched from key-in-code setup to `.env.example` and environment loading.
+- Added reproducible install instructions, lint/test commands, and CI.
+- Made PDF export configurable instead of depending on a hard-coded local font file.
